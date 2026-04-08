@@ -144,6 +144,3 @@ Detailed pin connections: `docs/connections.md`
 
 ---
 
-## Author
-Abhi  
-Electronics & Communication Engineering Student
