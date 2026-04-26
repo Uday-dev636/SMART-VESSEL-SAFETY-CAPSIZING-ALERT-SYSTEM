@@ -26,11 +26,10 @@ bool danger = false;
 void setup() {
   Serial.begin(115200);
 
-  // ===== I2C =====
   Wire.begin(21, 22);
-  delay(500);
+  delay(300);
 
-  // ===== OLED INIT =====
+  // OLED
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     Serial.println("OLED FAIL");
     while (1);
@@ -39,17 +38,16 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
-
   display.setCursor(0, 0);
   display.println("BOOTING...");
   display.display();
   delay(1000);
 
-  // ===== BUZZER =====
+  // Buzzer
   pinMode(BUZZER, OUTPUT);
   digitalWrite(BUZZER, LOW);
 
-  // ===== LoRa INIT =====
+  // LoRa
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
 
   if (!LoRa.begin(433E6)) {
@@ -59,6 +57,11 @@ void setup() {
     display.display();
     while (1);
   }
+
+  // ⚠️ IMPORTANT: keep SAME as transmitter OR remove everywhere
+  LoRa.setSpreadingFactor(7);
+  LoRa.setSignalBandwidth(125E3);
+  LoRa.setCodingRate4(5);
 
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -82,10 +85,10 @@ void loop() {
       receivedData += (char)LoRa.read();
     }
 
-    Serial.println(receivedData);
+    Serial.println("RX: " + receivedData);
 
-    // ===== CHECK DANGER =====
-    if (receivedData.indexOf("ALERT") >= 0) {
+    // ✅ FIXED: match transmitter message
+    if (receivedData.indexOf("DANGER") >= 0) {
       danger = true;
       digitalWrite(BUZZER, HIGH);
     } else {
@@ -93,19 +96,31 @@ void loop() {
       digitalWrite(BUZZER, LOW);
     }
 
-    // ===== OLED DISPLAY =====
+    // ===== DISPLAY =====
     display.clearDisplay();
-    display.setCursor(0, 0);
+
+    // Title
+    display.setTextSize(1);
+    display.setCursor(20, 0);
+    display.println("LORA GUARD");
+
+    // Status
+    display.setTextSize(2);
+    display.setCursor(10, 15);
 
     if (danger) {
-      display.println("!!! DANGER !!!");
+      display.println("DANGER");
     } else {
-      display.println("STATUS: SAFE");
+      display.println("SAFE");
     }
 
-    display.println("");
+    // Divider
+    display.drawLine(0, 35, 127, 35, WHITE);
 
-    // Show message nicely
+    // Message
+    display.setTextSize(1);
+    display.setCursor(0, 40);
+
     int len = receivedData.length();
 
     if (len <= 20) {
